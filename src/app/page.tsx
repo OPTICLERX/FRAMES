@@ -137,8 +137,9 @@ export default function FrameCatalog() {
             <div
               key={frame.id}
               onClick={() => handleOpenFrame(frame)}
-              className="group bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-md transition cursor-pointer flex flex-col"
+              className="group bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-md transition cursor-pointer flex flex-col relative"
             >
+              {/* Card Thumbnail */}
               <div className="relative aspect-square bg-slate-100 overflow-hidden">
                 <CldImage
                   src={frame.thumbnailId}
@@ -147,6 +148,15 @@ export default function FrameCatalog() {
                   height={500}
                   className="object-cover w-full h-full group-hover:scale-105 transition duration-300"
                 />
+                
+                {/* Sold Out Overlay Badge - NEWLY ADDED HERE */}
+                {frame.isSoldOut && (
+                  <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px] flex items-center justify-center z-10">
+                    <span className="bg-red-600 text-white text-xs font-bold uppercase tracking-wider px-3 py-1.5 rounded-md shadow-lg select-none">
+                      Sold Out
+                    </span>
+                  </div>
+                )}
               </div>
 
               <div className="p-4 flex-1 flex flex-col justify-between">
@@ -176,7 +186,7 @@ export default function FrameCatalog() {
         </div>
       </main>
 
-      {/* Modal with Swipe & Zoom */}
+      {/* Modal with Touch Swipe & Zoom */}
       {activeFrame && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/60 backdrop-blur-sm">
           <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl flex flex-col md:flex-row relative">
@@ -209,7 +219,7 @@ export default function FrameCatalog() {
                 </Zoom>
 
                 {activeFrame.images.length > 1 && (
-                  <div className="absolute bottom-2 left-1/2 -translate-x-1/2 bg-black/60 text-white text-[10px] px-2.5 py-1 rounded-full backdrop-blur-sm pointer-events-none z-20">
+                  <div className="absolute bottom-2 left-1/2 -translate-x-1/2 bg-black/60 text-white text-[10px] px-2.5 py-1 rounded-full backdrop-blur-sm pointer-events-none z-20 select-none">
                     Swipe or tap thumbnails ({activeImageIndex + 1}/{activeFrame.images.length})
                   </div>
                 )}
