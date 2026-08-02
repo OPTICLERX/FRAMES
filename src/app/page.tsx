@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { CldImage } from 'next-cloudinary';
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
@@ -11,6 +11,10 @@ export default function FrameCatalog() {
   const [selectedStyle, setSelectedStyle] = useState<string>('All');
   const [activeFrame, setActiveFrame] = useState<Frame | null>(null);
   const [activeImageIndex, setActiveImageIndex] = useState<number>(0);
+
+  // Touch Swipe State
+  const touchStartX = useRef<number | null>(null);
+  const touchEndX = useRef<number | null>(null);
 
   const filteredFrames = useMemo(() => {
     return FRAMES_DATA.filter((frame) => {
@@ -28,15 +32,40 @@ export default function FrameCatalog() {
     setActiveImageIndex(0);
   };
 
-  // Next/Prev Slide Handlers
-  const handleNextImage = (e: React.MouseEvent, totalImages: number) => {
-    e.stopPropagation();
+  // Next/Prev Image Logic
+  const handleNextImage = (totalImages: number) => {
     setActiveImageIndex((prev) => (prev + 1) % totalImages);
   };
 
-  const handlePrevImage = (e: React.MouseEvent, totalImages: number) => {
-    e.stopPropagation();
+  const handlePrevImage = (totalImages: number) => {
     setActiveImageIndex((prev) => (prev - 1 + totalImages) % totalImages);
+  };
+
+  // Mobile Touch Handlers for Swiping
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.targetTouches[0].clientX;
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    touchEndX.current = e.targetTouches[0].clientX;
+  };
+
+  const handleTouchEnd = (totalImages: number) => {
+    if (!touchStartX.current || !touchEndX.current) return;
+    const distance = touchStartX.current - touchEndX.current;
+    const minSwipeDistance = 40; // minimum px required to register swipe
+
+    if (distance > minSwipeDistance) {
+      // Swiped Left -> Go to Next Image
+      handleNextImage(totalImages);
+    } else if (distance < -minSwipeDistance) {
+      // Swiped Right -> Go to Previous Image
+      handlePrevImage(totalImages);
+    }
+
+    // Reset touch coordinates
+    touchStartX.current = null;
+    touchEndX.current = null;
   };
 
   return (
@@ -150,7 +179,7 @@ export default function FrameCatalog() {
         </div>
       </main>
 
-      {/* Modal with Zoomable & Slideable Multi-Image Gallery */}
+      {/* Modal with Multi-Image Touch Swiping & Zoom */}
       {activeFrame && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/60 backdrop-blur-sm">
           <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl flex flex-col md:flex-row relative">
@@ -166,38 +195,31 @@ export default function FrameCatalog() {
             {/* Gallery Section */}
             <div className="md:w-1/2 flex flex-col bg-slate-100 p-4 justify-between relative">
               
-              {/* Featured Large View with Zoom & Slide Buttons */}
-              <div className="relative aspect-square rounded-xl overflow-hidden shadow-inner bg-white flex items-center justify-center group">
-                
-                {/* Zoom Wrapper */}
+              {/* Featured Large View with Touch Swipe Events */}
+              <div
+                onTouchStart={handleTouchStart}
+                onTouchMove={handleTouchMove}
+                onTouchEnd={() => handleTouchEnd(activeFrame.images.length)}
+                className="relative aspect-square rounded-xl overflow-hidden shadow-inner bg-white flex items-center justify-center touch-pan-y"
+              >
+                {/* Zoom Component */}
                 <Zoom>
                   <div className="relative w-full h-full aspect-square cursor-zoom-in">
                     <CldImage
                       src={activeFrame.images[activeImageIndex] || activeFrame.thumbnailId}
                       alt={activeFrame.title}
                       fill
-                      className="object-cover"
+                      className="object-cover select-none pointer-events-auto"
                       crop="fill"
                     />
                   </div>
                 </Zoom>
 
-                {/* Left/Right Slide Arrows */}
+                {/* Mobile Swipe Hint Badge */}
                 {activeFrame.images.length > 1 && (
-                  <>
-                    <button
-                      onClick={(e) => handlePrevImage(e, activeFrame.images.length)}
-                      className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/75 text-white w-8 h-8 rounded-full flex items-center justify-center z-20 backdrop-blur-sm transition"
-                    >
-                      &#10094;
-                    </button>
-                    <button
-                      onClick={(e) => handleNextImage(e, activeFrame.images.length)}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/75 text-white w-8 h-8 rounded-full flex items-center justify-center z-20 backdrop-blur-sm transition"
-                    >
-                      &#10095;
-                    </button>
-                  </>
+                  <div className="absolute bottom-2 left-1/2 -translate-x-1/2 bg-black/60 text-white text-[10px] px-2.5 py-1 rounded-full backdrop-blur-sm pointer-events-none">
+                    Swipe or tap thumbnails below ({activeImageIndex + 1}/{activeFrame.images.length})
+                  </div>
                 )}
               </div>
 
@@ -268,7 +290,7 @@ export default function FrameCatalog() {
                 </div>
               </div>
 
-              {/* Inquiry Buttons (Guaranteed visible in mobile view) */}
+              {/* Inquiry Buttons */}
               <div className="mt-6 border-t pt-4">
                 <p className="text-xs font-semibold text-slate-500 uppercase mb-2">
                   Send Request Via
