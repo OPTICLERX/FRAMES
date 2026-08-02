@@ -2,6 +2,8 @@
 
 import React, { useState, useMemo } from 'react';
 import { CldImage } from 'next-cloudinary';
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
 import { FRAMES_DATA, Frame } from '@/data/frames';
 
 export default function FrameCatalog() {
@@ -24,6 +26,17 @@ export default function FrameCatalog() {
   const handleOpenFrame = (frame: Frame) => {
     setActiveFrame(frame);
     setActiveImageIndex(0);
+  };
+
+  // Next/Prev Slide Handlers
+  const handleNextImage = (e: React.MouseEvent, totalImages: number) => {
+    e.stopPropagation();
+    setActiveImageIndex((prev) => (prev + 1) % totalImages);
+  };
+
+  const handlePrevImage = (e: React.MouseEvent, totalImages: number) => {
+    e.stopPropagation();
+    setActiveImageIndex((prev) => (prev - 1 + totalImages) % totalImages);
   };
 
   return (
@@ -137,34 +150,67 @@ export default function FrameCatalog() {
         </div>
       </main>
 
-      {/* Modal with Multi-Image Gallery */}
+      {/* Modal with Zoomable & Slideable Multi-Image Gallery */}
       {activeFrame && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl max-w-2xl w-full overflow-y-auto shadow-2xl flex flex-col md:flex-row max-h-[90vh]">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl flex flex-col md:flex-row relative">
             
+            {/* Close Button Top Right */}
+            <button
+              onClick={() => setActiveFrame(null)}
+              className="absolute top-3 right-3 z-30 p-2 bg-white/90 rounded-full text-slate-600 hover:text-slate-900 shadow hover:bg-white transition"
+            >
+              ✕
+            </button>
+
             {/* Gallery Section */}
-            <div className="md:w-1/2 flex flex-col bg-slate-100 p-4 justify-between">
-              {/* Featured Large View */}
-              <div className="relative aspect-square rounded-xl overflow-hidden shadow-inner bg-white">
-                <CldImage
-                  src={activeFrame.images[activeImageIndex] || activeFrame.thumbnailId}
-                  alt={activeFrame.title}
-                  fill
-                  className="object-cover"
-                  crop="fill"
-                />
+            <div className="md:w-1/2 flex flex-col bg-slate-100 p-4 justify-between relative">
+              
+              {/* Featured Large View with Zoom & Slide Buttons */}
+              <div className="relative aspect-square rounded-xl overflow-hidden shadow-inner bg-white flex items-center justify-center group">
+                
+                {/* Zoom Wrapper */}
+                <Zoom>
+                  <div className="relative w-full h-full aspect-square cursor-zoom-in">
+                    <CldImage
+                      src={activeFrame.images[activeImageIndex] || activeFrame.thumbnailId}
+                      alt={activeFrame.title}
+                      fill
+                      className="object-cover"
+                      crop="fill"
+                    />
+                  </div>
+                </Zoom>
+
+                {/* Left/Right Slide Arrows */}
+                {activeFrame.images.length > 1 && (
+                  <>
+                    <button
+                      onClick={(e) => handlePrevImage(e, activeFrame.images.length)}
+                      className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/75 text-white w-8 h-8 rounded-full flex items-center justify-center z-20 backdrop-blur-sm transition"
+                    >
+                      &#10094;
+                    </button>
+                    <button
+                      onClick={(e) => handleNextImage(e, activeFrame.images.length)}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/75 text-white w-8 h-8 rounded-full flex items-center justify-center z-20 backdrop-blur-sm transition"
+                    >
+                      &#10095;
+                    </button>
+                  </>
+                )}
               </div>
 
               {/* Thumbnails row */}
               {activeFrame.images.length > 1 && (
-                <div className="flex gap-2 mt-3 justify-center">
+                <div className="flex gap-2 mt-3 justify-center overflow-x-auto py-1">
                   {activeFrame.images.map((imgId, idx) => (
                     <button
                       key={imgId + idx}
                       onClick={() => setActiveImageIndex(idx)}
-                      className={`relative w-14 h-14 rounded-lg overflow-hidden border-2 transition ${
+                      className={`relative w-14 h-14 rounded-lg overflow-hidden border-2 flex-shrink-0 transition ${
                         activeImageIndex === idx
-                          ? 'border-blue-600 scale-105'
+                          ? 'border-blue-600 scale-105 shadow-sm'
                           : 'border-transparent opacity-70 hover:opacity-100'
                       }`}
                     >
@@ -184,21 +230,14 @@ export default function FrameCatalog() {
             {/* Product Details Section */}
             <div className="p-6 md:w-1/2 flex flex-col justify-between">
               <div>
-                <div className="flex justify-between items-start mb-2">
-                  <span className="text-xs font-semibold uppercase tracking-wider text-blue-600 bg-blue-50 px-2 py-0.5 rounded">
-                    {activeFrame.material}
-                  </span>
-                  <button
-                    onClick={() => setActiveFrame(null)}
-                    className="text-slate-400 hover:text-slate-600 text-lg font-bold"
-                  >
-                    ✕
-                  </button>
-                </div>
-                <h2 className="text-xl font-bold text-slate-900 mb-2">
+                <span className="text-xs font-semibold uppercase tracking-wider text-blue-600 bg-blue-50 px-2 py-0.5 rounded">
+                  {activeFrame.material}
+                </span>
+
+                <h2 className="text-xl font-bold text-slate-900 my-2">
                   {activeFrame.title}
                 </h2>
-                <p className="text-sm text-slate-600 mb-4">
+                <p className="text-sm text-slate-600 mb-4 leading-relaxed">
                   {activeFrame.description}
                 </p>
 
@@ -229,9 +268,9 @@ export default function FrameCatalog() {
                 </div>
               </div>
 
-              {/* Inquiry Buttons */}
-              <div className="mt-6 flex flex-col gap-2">
-                <p className="text-xs font-semibold text-slate-500 uppercase mb-1">
+              {/* Inquiry Buttons (Guaranteed visible in mobile view) */}
+              <div className="mt-6 border-t pt-4">
+                <p className="text-xs font-semibold text-slate-500 uppercase mb-2">
                   Send Request Via
                 </p>
                 <div className="flex gap-3">
@@ -258,6 +297,7 @@ export default function FrameCatalog() {
                   </a>
                 </div>
               </div>
+
             </div>
           </div>
         </div>
