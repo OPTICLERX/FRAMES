@@ -26,13 +26,11 @@ export default function FrameCatalog() {
     });
   }, [selectedMaterial, selectedStyle]);
 
-  // Open frame modal & reset to first image
   const handleOpenFrame = (frame: Frame) => {
     setActiveFrame(frame);
     setActiveImageIndex(0);
   };
 
-  // Next/Prev Image Logic
   const handleNextImage = (totalImages: number) => {
     setActiveImageIndex((prev) => (prev + 1) % totalImages);
   };
@@ -41,7 +39,6 @@ export default function FrameCatalog() {
     setActiveImageIndex((prev) => (prev - 1 + totalImages) % totalImages);
   };
 
-  // Mobile Touch Handlers for Swiping
   const handleTouchStart = (e: React.TouchEvent) => {
     touchStartX.current = e.targetTouches[0].clientX;
   };
@@ -53,20 +50,22 @@ export default function FrameCatalog() {
   const handleTouchEnd = (totalImages: number) => {
     if (!touchStartX.current || !touchEndX.current) return;
     const distance = touchStartX.current - touchEndX.current;
-    const minSwipeDistance = 40; // minimum px required to register swipe
+    const minSwipeDistance = 40;
 
     if (distance > minSwipeDistance) {
-      // Swiped Left -> Go to Next Image
       handleNextImage(totalImages);
     } else if (distance < -minSwipeDistance) {
-      // Swiped Right -> Go to Previous Image
       handlePrevImage(totalImages);
     }
 
-    // Reset touch coordinates
     touchStartX.current = null;
     touchEndX.current = null;
   };
+
+  // Get current active image ID safely
+  const currentImageId = activeFrame
+    ? activeFrame.images[activeImageIndex] || activeFrame.thumbnailId
+    : '';
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
@@ -140,15 +139,13 @@ export default function FrameCatalog() {
               onClick={() => handleOpenFrame(frame)}
               className="group bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-md transition cursor-pointer flex flex-col"
             >
-              {/* Card Thumbnail */}
               <div className="relative aspect-square bg-slate-100 overflow-hidden">
                 <CldImage
                   src={frame.thumbnailId}
                   alt={frame.title}
-                  fill
-                  className="object-cover group-hover:scale-105 transition duration-300"
-                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                  crop="fill"
+                  width={500}
+                  height={500}
+                  className="object-cover w-full h-full group-hover:scale-105 transition duration-300"
                 />
               </div>
 
@@ -179,12 +176,11 @@ export default function FrameCatalog() {
         </div>
       </main>
 
-      {/* Modal with Multi-Image Touch Swiping & Zoom */}
+      {/* Modal with Swipe & Zoom */}
       {activeFrame && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/60 backdrop-blur-sm">
           <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl flex flex-col md:flex-row relative">
             
-            {/* Close Button Top Right */}
             <button
               onClick={() => setActiveFrame(null)}
               className="absolute top-3 right-3 z-30 p-2 bg-white/90 rounded-full text-slate-600 hover:text-slate-900 shadow hover:bg-white transition"
@@ -194,31 +190,27 @@ export default function FrameCatalog() {
 
             {/* Gallery Section */}
             <div className="md:w-1/2 flex flex-col bg-slate-100 p-4 justify-between relative">
-              
-              {/* Featured Large View with Touch Swipe Events */}
               <div
                 onTouchStart={handleTouchStart}
                 onTouchMove={handleTouchMove}
                 onTouchEnd={() => handleTouchEnd(activeFrame.images.length)}
-                className="relative aspect-square rounded-xl overflow-hidden shadow-inner bg-white flex items-center justify-center touch-pan-y"
+                className="relative w-full aspect-square rounded-xl overflow-hidden shadow-inner bg-white flex items-center justify-center touch-pan-y"
               >
-                {/* Zoom Component */}
                 <Zoom>
-                  <div className="relative w-full h-full aspect-square cursor-zoom-in">
+                  <div className="relative w-full h-full flex items-center justify-center cursor-zoom-in">
                     <CldImage
-                      src={activeFrame.images[activeImageIndex] || activeFrame.thumbnailId}
+                      src={currentImageId}
                       alt={activeFrame.title}
-                      fill
-                      className="object-cover select-none pointer-events-auto"
-                      crop="fill"
+                      width={600}
+                      height={600}
+                      className="object-contain w-full h-full max-h-[350px]"
                     />
                   </div>
                 </Zoom>
 
-                {/* Mobile Swipe Hint Badge */}
                 {activeFrame.images.length > 1 && (
-                  <div className="absolute bottom-2 left-1/2 -translate-x-1/2 bg-black/60 text-white text-[10px] px-2.5 py-1 rounded-full backdrop-blur-sm pointer-events-none">
-                    Swipe or tap thumbnails below ({activeImageIndex + 1}/{activeFrame.images.length})
+                  <div className="absolute bottom-2 left-1/2 -translate-x-1/2 bg-black/60 text-white text-[10px] px-2.5 py-1 rounded-full backdrop-blur-sm pointer-events-none z-20">
+                    Swipe or tap thumbnails ({activeImageIndex + 1}/{activeFrame.images.length})
                   </div>
                 )}
               </div>
@@ -239,9 +231,9 @@ export default function FrameCatalog() {
                       <CldImage
                         src={imgId}
                         alt={`Preview ${idx + 1}`}
-                        fill
-                        className="object-cover"
-                        crop="fill"
+                        width={100}
+                        height={100}
+                        className="object-cover w-full h-full"
                       />
                     </button>
                   ))}
