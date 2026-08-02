@@ -9,8 +9,8 @@ export interface Frame {
   thumbnailId: string;
   images: string[];
   description: string;
+  isSoldOut?: boolean; // <-- Add this line
 }
-
 export const FRAMES_DATA: Frame[] = [
   {
     id: 'f1',
